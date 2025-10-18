@@ -1,0 +1,123 @@
+Elasticsearch (ES) is a distributed search and analytics engine built on top of Apache Lucene — a Java-based full-text search library.
+
+Lucene = the powerful search engine core (handles indexing & searching).
+Elasticsearch = the distributed system around Lucene (handles scaling, clustering, REST APIs, fault tolerance).
+
+2. Basic Building Blocks
+Concept	Description
+Index - 	A collection of related documents (like a database). Example: users, products, logs.
+Document -	A JSON object stored in an index (like a row in SQL).
+Field -	A key-value pair inside a document (like a column).
+Mapping -	defines the data types of fields (string, number, date, etc.) like a schema.
+Node - A single running Elasticsearch instance.
+Cluster	- A group of nodes working together to store and search data.
+Shard	- A partition of an index — the smallest unit of storage and search.
+Replica	- A copy of a shard used for redundancy and read scaling.
+
+--->>> How Data Is Stored
+
+Step 1: Hashing → Find the Right Shard
+Elasticsearch uses the document ID (1) to determine which shard will store it.
+shard = hash(_id) % number_of_primary_shards
+Each shard is assigned to a node in the cluster.
+That node is called the primary shard for this document.
+If there are replicas, Elasticsearch will also send a copy to the replica shards.
+
+Step 2: Lucene Takes Over (Inside the Shard)
+Each shard is actually a self-contained Lucene index.
+Lucene is the component that builds and maintains the inverted index, which powers text search.
+
+-> What Is an Inverted Index (Core of Lucene)
+The inverted index is a data structure that maps terms → documents instead of documents → terms.
+Example
+Say we have 2 docs:
+Doc 1: "apple banana"
+Doc 2: "banana orange"
+The inverted index looks like:
+Term	Documents
+apple	 -  1
+banana	-  1, 2
+orange	-  2
+
+---->>> How Lucene Stores Data (Segments)
+Inside each shard, Lucene stores data in immutable files called segments.
+When you index a document:
+1. It first goes into an in-memory buffer.
+2. Periodically, the buffer is flushed to disk as a new segment.
+3. The segment contains: the inverted index, stored fields, term dictionary, etc
+
+->> Background — What Are Segments?
+A segment in Lucene is like a mini index file — it contains: An inverted index (terms → document IDs), Stored fields (original data), Metadata
+When Elasticsearch writes data, it doesn’t modify old segments. Instead, it creates a new segment every time new data comes in. 
+So Lucene is append-only → new data = new file; updates/deletes are “marked”, not modified in-place. 
+Lucene never modifies data in place on disk.
+Whenever you add, update, or delete a document, Lucene writes a new segment (a mini-index file). This append-only design gives it:
+Speed — writes are sequential, not random disk I/O.
+Safety — avoids file corruption on crash.
+Consistency — no locks on old data
+
+✅ Benefit 1: Faster Concurrent Reads and Writes
+🔹 Problem (in normal databases)
+In traditional databases (like MySQL), updates change existing records on disk.
+That means:
+If one thread is writing, another reading thread might need to wait (locking).
+Disk blocks are rewritten → slower I/O.
+🔹 Solution (in Lucene)
+Because segments are never modified once written, readers and writers never block each other:
+Writer thread → appends new segments.
+Reader thread → keeps reading old segments safely (they never change).
+When new segments are ready (after a refresh), readers simply start using them too. (that' why it is eventual consistency).
+✅ Result → High throughput for both reads and writes concurrently.
+🚀 Benefit 2: Simplified Crash Recovery
+🔹 Problem (if data were mutable)
+If Lucene modified files in place and a crash happened mid-write, the files could become corrupted.
+You’d lose track of what was half-written.
+🔹 Solution (append-only + translog)
+Because Lucene writes new immutable segments, each is either:
+Fully written (safe), or
+Not yet visible (ignored).
+On top of that, Elasticsearch maintains a transaction log (translog) — like a safety journal:
+When new data is added, it’s also written to the translog.
+After a crash, Elasticsearch replays the translog to restore missing segments.
+✅ Result → Very safe and simple recovery, no complex “rollback” needed.
+
+Case 1: Document doesn’t exist
+→ A new document is written into an in-memory buffer.
+→ Later, that buffer is flushed to disk as a new segment (a file with inverted index).
+Case 2: Document already exists
+→ Elasticsearch treats it as a delete + add operation:
+The old document with _id = 123 is marked as deleted in its segment (but not physically removed yet).
+A new version of the document is appended in a new segment.
+So yes — the old one still exists physically on disk until Lucene runs merge operations.
+🧹 Segment merging — the cleanup
+Lucene runs a background merge process that:
+Combines smaller segments into bigger ones for efficiency.
+Physically drops deleted docs from the new merged segment.
+That’s how the old “deleted” document eventually disappears.
+
+
+👉The Lifecycle of a Document
+🪶 Step 1️⃣: Indexing — Writing to Memory and Translog
+When you send a new document to Elasticsearch like:
+POST /users/_doc/1
+{
+  "name": "Divyansh",
+  "role": "Developer"
+}
+
+Elasticsearch doesn’t immediately write that to disk. Instead, it does two things in memory and for durability:
+Memory Buffer (In-Memory Segment):
+1. The document is parsed and inverted index entries (like tokens → docIDs) are written into a memory buffer. Think of this as a temporary area holding your document before it’s made searchable.
+2. Translog (Transaction Log): At the same time, a copy of your operation (the JSON body) is written into a log file on disk.
+This ensures if the node crashes, Elasticsearch can replay these operations from the translog and recover your data.
+🔹 Why both?
+Memory buffer = fast writes (RAM) and Translog = durability (disk)
+🪶 Step 2️⃣: Refresh — Making Data Searchable
+By default, every 1 second, Elasticsearch performs a refresh.
+During refresh:
+The in-memory buffer is turned into a new Lucene segment.
+This segment is read-only and searchable.
+The segment is then added to the list of active segments for that shard.
+→ At this point, your document becomes visible in search results.
+That’s why Elasticsearch is near-real-time (NRT) — not instantly real-time, but usually searchable within 1 second.
+
