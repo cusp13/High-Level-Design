@@ -242,6 +242,60 @@ Avoid deep pagination (from + size very large). Use search_after for deep scroll
 Enable doc values for keyword/aggregation fields.
 Consider query caching for repeated queries.
 
+🚀🚀🚀🚀🚀🚀🚀 Cluster & Node Types
+
+Your table already lists the roles. Let’s expand:
+Master Node
+1. Manages cluster state (metadata like shard locations, mappings).
+2. Makes decisions about shard allocation, adding/removing nodes.
+3. Minimal CPU/memory needed unless cluster is huge.
+
+Data Node
+1. Stores primary & replica shards.
+2. Executes searches, aggregations, indexing.
+3. Most resource-intensive.
+
+Coordinating Node
+1. Acts as a router.
+2. Receives queries, sends to relevant shards, merges results.
+3. Does not store data. Good for load balancing in large clusters.
+
+Ingest Node
+1. Handles data preprocessing, pipelines, enrichments.
+2. Useful for log processing, transformations before indexing.
+
+🚀🚀🚀🚀🚀 Scaling in Elasticsearch
+✅Horizontal Scaling
+1. Achieved via shards.
+2. More shards → more nodes can participate → parallelism.
+3. Watch out: too many small shards → overhead.
+✅Replication
+1. Improves read performance and fault tolerance.
+2. Each replica is automatically synced with its primary.
+✅Routing
+1. Elasticsearch decides which shard a document goes to using document ID hashing.
+2. Ensures queries know exactly which shard to look in.
+
+4️⃣ Key Tradeoffs in Operations
+Operation	How Elasticsearch Handles	Tradeoff
+Indexing (write)	Append-only → new docs go to shard	Very fast
+Searching (read)	Distributed → queries sent to all shards in parallel	Scales well with replicas, but too many shards can add overhead
+Updating	Update = delete + reinsert in new segment	Expensive, old segment marked deleted → cleaned in merge
+Deleting	Lazy delete → marked as deleted	Doesn’t free space immediately; merges handle cleanup
+
+
+🚀🚀🚀🚀🚀🚀 Key Tradeoffs in ES Operations
+Operation	: How Elasticsearch Handles	Tradeoff
+1. Indexing (write)	Append-only → new docs go to shard	Very fast
+2. Searching (read)	Distributed → queries sent to all shards in parallel	Scales well with replicas, but too many shards can add overhead
+3. Updating	Update = delete + reinsert in new segment	Expensive, old segment marked deleted → cleaned in merge
+4. Deleting	Lazy delete → marked as deleted	Doesn’t free space immediately; merges handle cleanup
+
+
+Important Notes:
+1. Updates & Deletes are “lazy” because Lucene uses immutable segments.
+2. Merges run in background → old deleted docs are removed.
+3. Heavy updates/deletes → can cause segment bloat, slowing reads.
 
 
 
