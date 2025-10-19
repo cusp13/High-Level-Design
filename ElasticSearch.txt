@@ -1,4 +1,144 @@
+Short Notes:-
+⚙️ Elasticsearch (ES) — Developer Notes
 Elasticsearch (ES) is a distributed search and analytics engine built on top of Apache Lucene — a Java-based full-text search library.
+
+Lucene = the powerful search engine core (handles indexing & searching).
+Elasticsearch = the distributed system around Lucene (handles scaling, clustering, REST APIs, fault tolerance).
+
+👉👉👉👉👉👉👉👉 Basic Building Blocks
+
+Index -  A collection of related documents (like a database). Example: users, products, logs.
+Document -  A JSON object stored in an index (like a row in SQL).
+Field -  A key-value pair inside a document (like a column).
+Mapping - defines the data types of fields (string, number, date, etc.) like a schema.
+Node - A single running Elasticsearch instance.
+Cluster - A group of nodes working together to store and search data.
+Shard - A partition of an index — the smallest unit of storage and search.
+Replica - A copy of a shard used for redundancy and read scaling.
+
+👉👉👉👉👉👉👉👉 How Data Is Stored
+
+Step 1: Hashing → Find the Right Shard
+Elasticsearch uses the document ID (_id) to determine which shard will store it.
+shard = hash(_id) % number_of_primary_shards
+
+Step 2: Lucene Takes Over (Inside the Shard)
+Each shard is actually a self-contained Lucene index.
+Lucene is the component that builds and maintains the inverted index, which powers text search.
+
+Inverted Index Example:
+Doc 1: "apple banana"
+Doc 2: "banana orange"
+
+Term     Documents
+apple    1
+banana   1, 2
+orange   2
+
+👉👉👉👉👉👉👉 How Lucene Stores Data (Segments)
+Lucene stores data in immutable files called segments.
+When you index a document:
+1. It first goes into an in-memory buffer.
+2. Periodically, the buffer is flushed to disk as a new segment.
+3. The segment contains: the inverted index, stored fields, term dictionary, etc.
+
+Lucene is append-only → new data = new file; updates/deletes are “marked”, not modified in-place.
+
+✅ Benefit 1: Faster Concurrent Reads and Writes
+Because segments are never modified once written, readers and writers never block each other.
+
+✅ Benefit 2: Simplified Crash Recovery
+Lucene writes immutable segments. Elasticsearch also maintains a transaction log (translog) to replay operations after crash recovery.
+
+Case 1: Document doesn’t exist → Written to in-memory buffer, then flushed to disk.
+Case 2: Document exists → Delete + Add (old doc marked deleted, new doc written).
+
+🧹 Segment merging — Combines smaller segments into bigger ones and drops deleted docs.
+
+👉👉👉👉👉👉👉👉 The Lifecycle of a Document
+
+🪶 Step 1️⃣: Indexing — Writing to Memory and Translog
+Memory buffer = fast writes (RAM)
+Translog = durability (disk)
+
+🪶 Step 2️⃣: Refresh — Making Data Searchable
+Every 1 second (by default), memory buffer → segment → searchable.
+
+💾 Step 3️⃣: Flushing — Making Data Permanent
+Flush writes segments permanently to disk and clears translog.
+
+🧹 Step 4️⃣: Merging — Cleaning and Optimizing Segments
+Lucene merges small segments into bigger ones for better performance.
+
+👉👉👉👉👉👉👉👉 Problem: Heavy Writes vs Read Performance
+Solutions:
+1. Use Separate Indices (Hot-Warm Architecture)
+2. Increase refresh_interval during heavy writes
+3. Force merge read-only segments
+4. Use replicas to distribute reads
+5. Use multiple smaller indices
+
+👉👉👉👉👉👉 How Searching Works
+
+1️⃣ Coordinating Node Receives the Query
+Determines which shards are relevant, forwards query to each shard.
+
+2️⃣ Shards Execute Search Locally
+Each shard executes the query independently and returns top N results.
+
+3️⃣ Coordinating Node Merges Results
+Merges, sorts, and returns the final ranked list.
+
+👉👉👉👉👉👉 Shards and Replicas
+
+Shards - Basic unit of storage (mini Lucene index).
+Optimal shard size: 20–50 GB.
+Avoid too many small shards.
+
+Replicas - Copies of primary shards, used for scaling reads.
+Ensure replicas are on different nodes.
+
+Summary:
+Primary Shards → 20–50 GB
+Replicas → 1–2 for read-heavy systems
+
+🚀🚀🚀🚀🚀🚀 Optimizing Large Indexes (e.g., 150M docs)
+1️⃣ Shard Size & Count → 20–50 GB per shard (6–15 shards for 150–300 GB).
+2️⃣ Replicas → 1–2 replicas for read-heavy systems.
+3️⃣ Mappings → Remove unnecessary text fields.
+4️⃣ Refresh Interval → Increase to 5–30s.
+5️⃣ Query Optimization → Use search_after, caching, and doc values.
+
+🚀🚀🚀🚀🚀🚀🚀 Cluster & Node Types
+
+Master Node → Manages cluster state.
+Data Node → Stores shards and executes queries.
+Coordinating Node → Routes requests and merges results.
+Ingest Node → Handles preprocessing and pipelines.
+
+🚀🚀🚀🚀🚀 Scaling in Elasticsearch
+
+Horizontal Scaling → via shards across nodes.
+Replication → improves read performance and fault tolerance.
+Routing → determines which shard stores a document.
+
+🚀🚀🚀🚀🚀 Key Tradeoffs in ES Operations
+
+Operation       How ES Handles                            Tradeoff
+Indexing        Append-only → new docs go to shard         Very fast
+Searching       Distributed → parallel query to shards     Scales well but adds overhead
+Updating        Delete + Reinsert in new segment           Expensive, cleanup via merge
+Deleting        Lazy delete, cleaned up in merge           Space freed later
+
+Notes:
+- Updates & Deletes are lazy (due to immutable segments)
+- Merges handle cleanup
+- Heavy updates/deletes can cause segment bloat and slow reads
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+🚀🚀🚀🚀🚀🚀🚀🚀🚀Detailed Notes:-
+Elasticsearch (ES) is a distributed search and analytics engine built on top of Apache Lucene, a Java-based full-text search library.
 
 Lucene = the powerful search engine core (handles indexing & searching).
 Elasticsearch = the distributed system around Lucene (handles scaling, clustering, REST APIs, fault tolerance).
