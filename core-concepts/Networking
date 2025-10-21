@@ -1,0 +1,74 @@
+Networking is a fundamental part of system design: you're nearly always going to be designing systems comprised of independent devices that communicate over a network. 
+Networking 101
+At its core, networking is about connecting devices and enabling them to communicate. Networks are built on a layered architecture (the so-called "OSI model") which greatly 
+simplifies the world for us application developers who sit on top of it.
+Networking Layers
+Network Layer (Layer 3):- ("postal routing system") Its main goal: figure out how to send data from one device to another — possibly across multiple networks.
+1. When your computer sends a message (like a file or a web request), IP doesn’t send it all at once. It divides the data into smaller units called packets, 
+   each of which can travel separately through the network.
+2. Every device on a network has an IP address (like 192.168.1.1 or 2400:da00::1 for IPv6).
+3. IP works with routers — special devices that figure out the best path to send packets to reach their destination, even if the destination is on a completely different network.
+4. IP is not guaranteed to deliver every packet — it’s a best-effort protocol. This means it will try to deliver data but won’t check for packet loss or order. If packets get dropped 
+   or arrive out of order, higher layers (like TCP) handle fixing that.
+Transport Layers
+The Network Layer (Layer 3) gets your data across networks — it figures out how to reach the destination.
+But once your data arrives at the destination machine, how does it reach the right process/app?
+That’s the Transport Layer’s job.
+It ensures reliable, ordered, and application-specific delivery of messages between two endpoints (like between your browser and a web server).
+1. 🧱 TCP (Transmission Control Protocol)
+→ Reliable, ordered, connection-oriented protocol
+🚗 Analogy:
+Like a reliable courier service that:
+Calls before pickup (connection setup)
+Tracks every parcel (acknowledgment)
+Resends any lost parcel
+Delivers in order
+2. 🚀 UDP (User Datagram Protocol)
+→ Fast, connectionless, unreliable protocol
+🚗 Analogy: Like sending postcards — each one travels separately, and if one is lost, you just move on.
+3. ⚡ QUIC (Quick UDP Internet Connections)
+→ Modern protocol built on top of UDP
+Why QUIC was created:
+1. TCP is reliable but slow due to:
+2. Connection setup (3-way handshake)
+3. Head-of-line blocking (waiting for missing packets)
+4. TLS encryption happening separately
+QUIC solves this by:
+🌀 Combining TLS encryption + transport in one layer (faster handshake)
+⚡ Built on UDP, so it’s connectionless but still reliable & ordered
+🚀 Provides multiplexing (multiple streams in one connection)
+🔄 Allows connection migration — your session stays alive even if your IP changes (e.g., switching from WiFi to mobile data)
+⚡ Example: When you load a website using HTTP/3, it’s actually using QUIC under the hood — faster, secure, and resilient.
+🚗 Analogy: Like an express delivery service that’s as fast as UDP but as reliable as TCP — with built-in security and no traffic jams.
+
+🧠 Easy way to remember:
+Transport Layer → “Split message so receiver can understand it correctly.”
+Network Layer → “Figure out how and where to send each piece
+| Layer       | Name            | Main Protocols | Focus                                                                       |
+| ----------- | --------------- | -------------- | --------------------------------------------------------------------------- |
+| Layer 3     | Network Layer   | IP             | Getting data to the right machine                                           |
+| Layer 4     | Transport Layer | TCP, UDP, QUIC | Getting data to the right process on that machine, reliably and efficiently |
+
+✅ How Transport layer protocol is decided?
+So — you decide at the application layer (like HTTP, WebSocket, or WebRTC).
+Each of those automatically defines which transport protocol (TCP/UDP/QUIC) it uses under the hood.
+| Type of App            | Common Protocol           | Uses Which Transport Layer Protocol |
+| ---------------------- | ------------------------- | ----------------------------------- |
+| Website                | **HTTP / HTTPS**          | ✅ TCP (or QUIC for HTTP/3)         |
+| API Server             | **REST (HTTP)**           | ✅ TCP                              |
+| Chat / Messaging       | **WebSocket (over HTTP)** | ✅ TCP                              |
+| Video Call / Streaming | **RTP / WebRTC**          | ⚡ UDP                               |
+| Email                  | **SMTP / IMAP**           | ✅ TCP                              |
+| DNS Lookup             | **DNS**                   | ⚡ UDP                               |
+
+| Who Decides What                       | Example                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------- |
+| **You (Developer)**                    | Pick the **application layer** (e.g., HTTP, WebSocket, DNS, WebRTC)             |
+| **Protocol Specification**             | Defines the **transport layer** (e.g., HTTP → TCP, WebRTC → UDP)                |
+| **Operating System**                   | Handles the **network layer (IP)** and below automatically                      |
+| **You rarely choose TCP/UDP manually** | Unless you’re writing a **custom socket app** (e.g., game server or IoT system) |
+
+Application Layer (Layer 7)
+At the final layer are the application protocols like DNS, HTTP, Websockets, WebRTC. These are common protocols that build on top of TCP (or UDP, in the case of WebRTC) to provide 
+a layer of abstraction for different types of data typically associated with web applications.
+
