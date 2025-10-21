@@ -72,3 +72,47 @@ Application Layer (Layer 7)
 At the final layer are the application protocols like DNS, HTTP, Websockets, WebRTC. These are common protocols that build on top of TCP (or UDP, in the case of WebRTC) to provide 
 a layer of abstraction for different types of data typically associated with web applications.
 
+Example: A Simple Web Request
+When you type a URL into your browser, several layers of networking protocols spring into action. Let's break down how these layers work together to retrieve a simple web page over HTTP on TCP.
+First, we use DNS to convert a human-readable domain name like hellointerview.com into an IP address like 32.42.52.62. Then, a series of carefully orchestrated steps begins. We set up a TCP connection over IP, send our HTTP request, get a response, and tear down the connection.
+In detail:
+
+✅ Simple HTTP Request
+1. DNS Resolution: The client starts by resolving the domain name of the website to an IP address using DNS (Domain Name System).
+2. TCP Handshake: The client initiates a TCP connection with the server using a three-way handshake:
+    SYN: The client sends a SYN (synchronize) packet to the server to request a connection.
+    SYN-ACK: The server responds with a SYN-ACK (synchronize-acknowledge) packet to acknowledge the request.
+    ACK: The client sends an ACK (acknowledge) packet to establish the connection.
+3. HTTP Request: Once the TCP connection is established, the client sends an HTTP GET request to the server to request the web page.
+4. Server Processing: The server processes the request, retrieves the requested web page, and prepares an HTTP response. (This is usually the only latency most SWE's think about and control!)
+5. HTTP Response: The server sends the HTTP response back to the client, which includes the requested web page content.
+6. TCP Teardown: After the data transfer is complete, the client and server close the TCP connection using a four-way handshake:
+    FIN: The client sends a FIN (finish) packet to the server to terminate the connection.
+    ACK: The server acknowledges the FIN packet with an ACK.
+    FIN: The server sends a FIN packet to the client to terminate its side of the connection.
+    ACK: The client acknowledges the server's FIN packet with an ACK.
+
+What kind of connection chat application used
+1️⃣ HTTP Keep-Alive (HTTP/1.1)
+Normally, HTTP/1.1 closes the connection after every request-response.
+Keep-Alive keeps the TCP connection open for multiple requests.
+Reduces the overhead of re-establishing TCP connections.
+✅ Good for frequent short requests, like fetching multiple resources from a website.
+⚠️ Still not ideal for real-time chat, because:
+You’d need to poll the server repeatedly to get updates.
+Even with Keep-Alive, HTTP is still request-response, not truly bi-directional.
+
+2️⃣ HTTP/2 Multiplexing
+HTTP/2 allows multiple requests/responses to share a single TCP connection concurrently.
+Reduces latency compared to HTTP/1.1, because you don’t need multiple TCP connections for multiple resources.
+✅ Good for web apps with lots of assets or API calls.
+⚠️ Still request-response: the server can’t push real-time messages to the client easily (without special server push features).
+
+3️⃣ Why chat apps don’t rely on them
+Chat apps need server-initiated messages: the server must be able to push messages instantly.
+HTTP/1.1 or HTTP/2 alone don’t naturally allow the server to push data whenever it wants (HTTP/2 has server push, but it’s designed for resources, not arbitrary events like chat messages).
+So most chat apps use:
+WebSockets (over TCP) → truly bi-directional, persistent connection.
+MQTT or XMPP (over TCP) → lightweight, persistent, real-time messaging.
+
+The Dynamic Host Configuration Protocol (DHCP) is a network management protocol used on Internet Protocol (IP) networks for automatically assigning IP addresses and other communication parameters to devices connected to the network using a client–server architecture.
