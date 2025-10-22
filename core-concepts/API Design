@@ -1,0 +1,142 @@
+ 🧩 1. API Design in System Design Interviews
+
+ Define how clients interact with your system.
+ Keep it short (~5 min) — show good judgment, not perfection.
+ For frontend/product/junior roles, API design matters more.
+
+
+
+ ⚙️ 2. Common API Types
+
+(a) REST — Default choice
+
+ Uses HTTP verbs (GET, POST, PUT, PATCH, DELETE).
+ Maps well to CRUD and database operations.
+ Well-understood, best for 90% of cases.
+
+(b) GraphQL
+
+ Single endpoint, client defines data shape.
+ Solves over-fetching/under-fetching issues.
+ Best for diverse clients (mobile/web).
+ Adds complexity (schema, resolvers, caching).
+
+(c) RPC / gRPC
+
+ Action-based (e.g., `createBooking()`).
+ High performance, binary serialization (Protocol Buffers + HTTP/2).
+ Ideal for internal microservice communication.
+
+👉 Default to REST unless explicitly told otherwise.
+
+
+
+ 🔗 3. REST Design Basics
+
+a. Resource Modeling
+
+ Identify core entities (e.g., events, venues, bookings).
+ Use plural nouns (`/events`, `/bookings`).
+ Nest when relationship is required: `/events/{id}/tickets`.
+ Use query params for optional filters: `/tickets?event_id=123`.
+
+b. HTTP Methods
+
+| Method | Purpose        | Idempotent? |
+|  | -- | -- |
+| GET    | Read           | ✅           |
+| POST   | Create         | ❌           |
+| PUT    | Replace        | ✅           |
+| PATCH  | Partial Update | ✅           |
+| DELETE | Remove         | ✅           |
+
+ Understand idempotency — retries shouldn’t cause duplicates.
+
+c. Passing Data
+
+| Location     | Purpose              | Example              |
+|  | -- | -- |
+| Path Params  | Required resource ID | `/events/123`        |
+| Query Params | Optional filters     | `/events?city=NYC`   |
+| Request Body | Main payload         | Booking details JSON |
+
+d. Returning Data
+
+ Use JSON + proper HTTP status codes (200, 201, 400, 401, 404, 500).
+ Know 4xx = client errors, 5xx = server errors.
+
+
+
+ 🧠 4. GraphQL Basics
+
+ One endpoint (`/graphql`) handles flexible queries.
+ Client specifies exactly what fields it needs.
+ Great for multi-client systems (mobile/web).
+ Watch for N+1 query problem → solve using batching/dataloaders.
+ Authorization often at field level.
+ Use when interviewer mentions flexible fetching or multiple clients.
+
+
+
+ ⚡ 5. RPC (gRPC) Basics
+
+ Procedure-oriented → remote function calls.
+ Define `.proto` files → generate client/server code.
+ Fast, type-safe, supports streaming.
+ Use internally between microservices (not for public APIs).
+
+
+
+ 🔁 6. Common API Patterns
+
+a. Pagination
+
+ Offset-based: `/events?offset=20&limit=10` (simple, can shift).
+ Cursor-based: `/events?cursor=abc&limit=10` (stable for real-time).
+ Mention pagination to show scalability awareness.
+
+b. Versioning
+
+ URL versioning: `/v1/events` (clear, simple).
+ Header versioning: `API-Version: 2` (cleaner but less visible).
+ In interviews → use URL versioning.
+
+
+
+ 🔒 7. Security Considerations
+
+a. Authentication vs Authorization
+
+ AuthN → Who are you?
+ AuthZ → What are you allowed to do?
+
+b. API Keys
+
+ Used for server-to-server or 3rd-party access.
+ Stored/validated by backend.
+
+c. JWT Tokens
+
+ Used for user sessions (web/mobile).
+ Self-contained (no DB lookup), includes user info + expiry.
+
+d. RBAC (Role-Based Access Control)
+
+ Define roles and restrict endpoints accordingly.
+
+e. Rate Limiting / Throttling
+
+ Prevent abuse (e.g., 1000 req/hr per user).
+ Return `429 Too Many Requests` when exceeded.
+
+
+
+ 🧭 8. Interview Strategy
+
+ Spend ≤ 5 minutes on APIs.
+ Show:
+
+   You can design logical endpoints.
+   You know REST basics.
+   You’re aware of security and scalability (pagination, versioning, rate limits).
+ Don’t over-optimize; focus on reasoning and clarity.
