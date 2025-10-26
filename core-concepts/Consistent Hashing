@@ -1,0 +1,123 @@
+## 🧩 What Problem Consistent Hashing Solves
+
+When you have **multiple servers or shards**, you need a way to decide **where each data item goes** — e.g.,
+“Which cache node stores this user’s session?”
+“Which DB shard stores this user’s order?”
+
+The **naive way** (like `hash(key) % N`) fails badly when:
+
+* You **add** a node (N changes → all data remapped)
+* You **remove** a node (crash → all data remapped again)
+
+Result: **massive data reshuffling** → poor performance and downtime.
+
+✅ **Consistent Hashing** fixes this by **minimizing data movement** when nodes are added or removed.
+
+---
+
+## ⚙️ How It Works
+
+Imagine a **hash ring (0 to 2³² - 1)** arranged in a circle:
+
+1. Every **server (or shard)** is placed on the ring using a hash of its name.
+
+   ```
+   hash("DB1") → position 1000
+   hash("DB2") → position 20000
+   hash("DB3") → position 40000
+   ```
+
+2. Every **data item (key)** is also hashed onto the same ring.
+
+   ```
+   hash("user123") → position 15000
+   ```
+
+3. The item is stored on the **next node clockwise** on the ring.
+   → Here, 15000 goes to DB2.
+
+So, each node is responsible for the range between its predecessor and itself.
+
+---
+
+## 🧮 When Adding or Removing Nodes
+
+* If you **add** a node, say `DB4` → only data that falls between the previous node and `DB4`’s position needs to move.
+* If you **remove** a node → only data on that node’s range gets reassigned.
+
+Instead of **rebalancing everything**, you only **move a small fraction of data**.
+
+That’s the magic.
+
+---
+
+## 🌀 Virtual Nodes (vNodes)
+
+To prevent **uneven load distribution**, each physical node is assigned **multiple positions** (virtual nodes) on the ring:
+
+Example:
+
+```
+DB1 → hash("DB1#1"), hash("DB1#2"), hash("DB1#3")
+DB2 → hash("DB2#1"), hash("DB2#2"), hash("DB2#3")
+```
+
+If a node fails, its load is spread more evenly across others.
+👉 The **more virtual nodes**, the **better balance**.
+
+---
+
+## 💡 Real-World Examples
+
+| System                              | Where Consistent Hashing is Used | Why                                                        |
+| ----------------------------------- | -------------------------------- | ---------------------------------------------------------- |
+| **Amazon DynamoDB**                 | Distributes partitions           | Handle node joins/leaves without rebalancing whole cluster |
+| **Apache Cassandra**                | Data distribution across ring    | Scalable peer-to-peer architecture                         |
+| **Redis Cluster**                   | Keyslot allocation               | Scale horizontally with minimal rebalance                  |
+| **CDNs (e.g., Cloudflare, Akamai)** | Cache selection                  | Pick nearest edge node deterministically                   |
+
+---
+
+## 🧠 In Interviews: When to Mention It
+
+| Scenario                                    | How to Mention                                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Distributed Cache (e.g., Redis Cluster)** | “To map keys to cache nodes efficiently, I’d use consistent hashing to minimize cache invalidation when nodes are added or removed.” |
+| **Sharded DB Design**                       | “Instead of modulo-based sharding, I’d use consistent hashing for dynamic scaling and minimal data movement.”                        |
+| **Load Balancing / Message Queues**         | “We can use consistent hashing to route requests/messages to the same worker, ensuring locality and cache reuse.”                    |
+
+---
+
+## ⚔️ Consistent Hashing vs Modulo Hashing
+
+| Feature              | Modulo Hashing         | Consistent Hashing       |
+| -------------------- | ---------------------- | ------------------------ |
+| Adding/Removing Node | Redistributes all keys | Redistributes few keys   |
+| Load Balance         | Often uneven           | Even with vNodes         |
+| Implementation       | Simple                 | Slightly more complex    |
+| Used In              | Small, static clusters | Scalable dynamic systems |
+
+---
+
+## 🧩 Example Analogy
+
+Think of a **clock** with **12 hours** and 3 servers:
+
+* Server A → 12
+* Server B → 4
+* Server C → 8
+
+Each “data item” is a time on the clock, and it belongs to the **next server clockwise**.
+
+If you add a new server at “2”, only items between 12 → 2 move.
+Everything else stays put.
+That’s **consistent hashing** — move only what you must.
+
+---
+
+## 🔧 Bonus: Interview Tips
+
+When asked:
+> “How would you shard data or distribute load?”
+Say:
+> “I’d use consistent hashing because it minimizes data redistribution when nodes are added.
