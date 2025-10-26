@@ -129,6 +129,26 @@ e. Rate Limiting / Throttling
  Prevent abuse (e.g., 1000 req/hr per user).
  Return `429 Too Many Requests` when exceeded.
 
+Pagination
+When you're dealing with large datasets, you can't return everything at once. Imagine an API that returns all events ever created, that could be millions of records which would be many gigabytes of data.
+Instead, you need pagination to break large result sets into manageable chunks. There are two main approaches to pagination: offset-based and cursor-based.
+✅ Offset-based Pagination
+Offset-based pagination is the simplest approach and used by most websites. 
+You specify how many records to skip and how many to return: /events?offset=20&limit=10 gets records 21-30. 
+This is intuitive and easy to implement, but it has problems with large datasets. 
+If someone adds a new event while you're paginating through results, you might see duplicates or miss records as the data shifts.
+✅ Cursor-based Pagination
+Cursor-based pagination solves this by using a pointer to a specific record instead of counting from the beginning. 
+Here's how it works in practice:
+First request: /events?limit=10
+Response includes the events plus a cursor pointing to the last record:
+{
+  "events": [...],
+  "next_cursor": "cmd9atj3p000007ky19w1dpy2"
+}
+Next request: /events?cursor=cmd9atj3p000007ky19w1dpy2&limit=10
+The cursor is typically an encoded reference to a specific record (like an ID or timestamp). This is more stable because it's not affected by new records being added, but it's harder to implement features like "jump to page 5." In the example, cmd9atj3p000007ky19w1dpy2 is the id of the last event in the first page.
+For interviews, offset-based pagination is usually fine unless you're dealing with real-time data or the interviewer specifically asks about high-volume scenarios. Most interviewers care more about whether you remembered to include pagination than which specific approach you choose.
 
 
  🧭 8. Interview Strategy
