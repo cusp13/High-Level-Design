@@ -150,12 +150,17 @@ Next request: /events?cursor=cmd9atj3p000007ky19w1dpy2&limit=10
 The cursor is typically an encoded reference to a specific record (like an ID or timestamp). This is more stable because it's not affected by new records being added, but it's harder to implement features like "jump to page 5." In the example, cmd9atj3p000007ky19w1dpy2 is the id of the last event in the first page.
 For interviews, offset-based pagination is usually fine unless you're dealing with real-time data or the interviewer specifically asks about high-volume scenarios. Most interviewers care more about whether you remembered to include pagination than which specific approach you choose.
 
+Other Real-Life Examples
+Train Ticket Counter
+Offset-based: “Give me the 101st to 110th customer” → if someone skips the line, your numbers are off.
+Cursor-based: “Give me the 10 customers after this ticket number X” → stable, doesn’t matter who jumped in or out.
+Email Inbox Scroll
+Offset: “Show emails 21–40” → new emails could push old emails to a different position.
+Cursor: “Show emails after ID 12345” → exact next batch, no duplicates, no skipping.
 
  🧭 8. Interview Strategy
-
  Spend ≤ 5 minutes on APIs.
  Show:
-
    You can design logical endpoints.
    You know REST basics.
    You’re aware of security and scalability (pagination, versioning, rate limits).
