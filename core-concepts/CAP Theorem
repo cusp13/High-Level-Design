@@ -3,14 +3,13 @@
 ### 📍 Definition
 
 CAP theorem states that a distributed system can only guarantee two of the following three properties at any given time:
-
-| Property                    | Meaning                                                                                                  |
-| --------------------------- | -------------------------------------------------------------------------------------------------------- |
+_____________________________________________________________________________________________________________________________________
+| Property                | Meaning                                                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
 | C – Consistency         | Every node sees the same data at the same time. After a write, all future reads return the latest value. |
 | A – Availability        | Every request receives a valid (non-error) response — even if it might be outdated.                      |
 | P – Partition Tolerance | The system continues to operate despite network failures or message loss between nodes.                  |
 
----
 
 ## ⚙️ Core Idea
 
@@ -42,8 +41,8 @@ When User B (in Europe) views the profile:
 
 | Option | Choice       | Effect                                                            |
 | ------ | ------------ | ----------------------------------------------------------------- |
-| A  | Consistency  | Return an error until replication completes. Data always correct. |
-| B  | Availability | Return cached/stale data. Data may be old but system responds.    |
+| A      | Consistency  | Return an error until replication completes. Data always correct. |
+| B      | Availability | Return cached/stale data. Data may be old but system responds.    |
 
 > 💡 Real-world trade-off:
 > For social media, stale profile names are fine → Availability preferred
@@ -125,8 +124,8 @@ They apply different levels of consistency for different features.
 ---------------------------------------------------------------------------------
 | Feature               | Requirement            | Reason                       |
 | --------------------- | ---------------------- | ---------------------------- |
-| Booking seat          | Strong consistency | Prevent duplicate bookings   |
-| Viewing event details | Availability       | Outdated description is fine |
+| Booking seat          | Strong consistency     | Prevent duplicate bookings   |
+| Viewing event details | Availability           | Outdated description is fine |
 
 Interview phrasing:
 
@@ -139,8 +138,8 @@ Interview phrasing:
 ---------------------------------------------------------------------------------
 | Feature          | Requirement      | Reason                                  |
 | ---------------- | ---------------- | --------------------------------------- |
-| Match creation   | Consistency  | Both users must see the match instantly |
-| Viewing profiles | Availability | Slightly stale data acceptable          |
+| Match creation   | Consistency      | Both users must see the match instantly |
+| Viewing profiles | Availability     | Slightly stale data acceptable          |
 
 Interview phrasing:
 
@@ -153,10 +152,10 @@ Interview phrasing:
 ------------------------------------------------------------------------------------------------
 | Model                    | Description                          | Example Use                |
 | ------------------------ | ------------------------------------ | -------------------------- |
-| Strong Consistency   | All reads reflect the latest write   | Banking, ledgers           |
-| Causal Consistency   | Maintains logical order (A before B) | Comment threads, messaging |
-| Read-your-own-writes | Users see their own latest updates   | Social profile update      |
-| Eventual Consistency | Becomes consistent over time         | Caches, DNS, feeds         |
+| Strong Consistency       | All reads reflect the latest write   | Banking, ledgers           |
+| Causal Consistency       | Maintains logical order (A before B) | Comment threads, messaging |
+| Read-your-own-writes     | Users see their own latest updates   | Social profile update      |
+| Eventual Consistency     | Becomes consistent over time         | Caches, DNS, feeds         |
 
 ---
 
@@ -164,11 +163,11 @@ Interview phrasing:
 ----------------------------------------------------------------------------------------------------
 | Design Choice                          | CAP Impact                                               |
 | -------------------------------------- | -------------------------------------------------------- |
-| Single database (no replicas)      | Strong consistency, no partition tolerance               |
-| Replicas with async replication    | High availability, eventual consistency                  |
-| Consensus algorithms (Raft, Paxos) | Strong consistency, reduced availability under partition |
-| Caching layers (Redis, CDN)        | Increases availability, introduces potential staleness   |
-| Multi-region databases             | Require choosing consistency model per region            |
+| Single database (no replicas)          | Strong consistency, no partition tolerance               |
+| Replicas with async replication        | High availability, eventual consistency                  |
+| Consensus algorithms (Raft, Paxos)     | Strong consistency, reduced availability under partition |
+| Caching layers (Redis, CDN)            | Increases availability, introduces potential staleness   |
+| Multi-region databases                 | Require choosing consistency model per region            |
 
 ---
 
@@ -187,22 +186,17 @@ Interview phrasing:
 # 💬 Interview Framework
 
 ### Step-by-step how to talk about CAP in interviews:
-
 1. Acknowledge the theorem
-
    > “Since this is a distributed system, we must handle partitions. So we can only pick between Consistency and Availability.”
 
 2. Ask a trade-off question
-
    > “Is it acceptable if users see slightly stale data for a few seconds?”
 
 3. Choose based on use case
-
    > “If data freshness is critical (like payments), I’ll prioritize consistency (CP).
    > If uptime is more important (like social feeds), I’ll prioritize availability (AP).”
 
 4. Mention real implementation
-
    > “We’ll use async replication + CDC for AP systems, and strong consistency with distributed transactions for CP systems.”
 
 ---
@@ -211,8 +205,8 @@ Interview phrasing:
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 | Theorem            | Meaning                                                                                                                                                         |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PACELC Theorem | Extends CAP: -If Partition (P) → choose between A or C; Else → choose between Latency or Consistency.-                                                          |
-| BASE vs ACID   | BASE (Basically Available, Soft state, Eventual consistency) applies to AP systems; ACID (Atomicity, Consistency, Isolation, Durability) applies to CP systems. |
+| PACELC Theorem     | Extends CAP: -If Partition (P) → choose between A or C; Else → choose between Latency or Consistency.-                                                          |
+| BASE vs ACID       | BASE (Basically Available, Soft state, Eventual consistency) applies to AP systems; ACID (Atomicity, Consistency, Isolation, Durability) applies to CP systems. |
 
 ---
 
@@ -220,9 +214,9 @@ Interview phrasing:
 ------------------------------------------------------------------------------------------------
 | Concept                 | Description                                                        |
 | ----------------------- | ------------------------------------------------------------------ |
-| CAP Core            | Can only have two: Consistency, Availability, Partition Tolerance  |
-| Partition tolerance | Always required in distributed systems                             |
-| Consistency first   | Use for finance, tickets, inventory                                |
-| Availability first  | Use for social, media, caching                                     |
-| Modern systems      | Mix both — consistency where critical, availability where scalable |
+| CAP Core                | Can only have two: Consistency, Availability, Partition Tolerance  |
+| Partition tolerance     | Always required in distributed systems                             |
+| Consistency first       | Use for finance, tickets, inventory                                |
+| Availability first      | Use for social, media, caching                                     |
+| Modern systems          | Mix both — consistency where critical, availability where scalable |
 ------------------------------------------------------------------------------------------------
