@@ -52,7 +52,7 @@ Sorted Sets:
 ZADD leaderboard 100 user1, ZADD leaderboard 500 user2, ZRANGE leaderboard 0 -1 WITHSCORES, ZREVRANGE leaderboard 0 10 WITHSCORES
 
 Streams:
-XADD mystream * event login user Alice, XREADGROUP GROUP g1 c1 COUNT 10 STREAMS mystream >, XCLAIM mystream g1 c2 60000 <message_id>
+XADD mystream - event login user Alice, XREADGROUP GROUP g1 c1 COUNT 10 STREAMS mystream >, XCLAIM mystream g1 c2 60000 <message_id>
 
 Pub/Sub:
 PUBLISH channel1 "hello world", SUBSCRIBE channel1
@@ -105,7 +105,7 @@ await redis.zadd("leaderboard", 500, "user1");
 const top = await redis.zrevrange("leaderboard", 0, 4, "WITHSCORES");
 
 // Stream
-await redis.xadd("mystream", "*", "event", "login");
+await redis.xadd("mystream", "-", "event", "login");
 const events = await redis.xreadgroup("group1", "consumer1", { key: "mystream", count: 10 });
 
 // Pub/Sub
@@ -129,40 +129,32 @@ redis.on("message", (channel, message) => console.log(channel, message));
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 Detailed Notes:
-### **1. What Redis is**
+### 1. What Redis is
 
-* **Redis** is a **data structure store** written in C.
-* It’s **in-memory** (data stored in RAM) and **single-threaded**.
+- Redis is a data structure store written in C.
+- It’s in-memory (data stored in RAM) and single-threaded.
 
-  * ⚡ This makes it **extremely fast** for reads and writes.
-  * Tradeoff: limited **durability**—data may be lost if the server crashes, unless you use features like **AOF (Append-Only File)**.
-* Core idea: **key-value store**, but values can be more than strings—they can be complex data structures like lists, sets, hashes, sorted sets, etc.
-
+  - ⚡ This makes it extremely fast for reads and writes.
+  - Tradeoff: limited durability—data may be lost if the server crashes, unless you use features like AOF (Append-Only File).
+- Core idea: key-value store, but values can be more than strings—they can be complex data structures like lists, sets, hashes, sorted sets, etc.
 ---
-
-### **2. Key Data Structures**
-
+### 2. Key Data Structures
 Redis supports many structures that resemble programming language constructs:
-
-| Data Structure       | Use Case                                              |
-| -------------------- | ----------------------------------------------------- |
-| **String**           | Simple key-value                                      |
-| **Hash**             | JSON-like objects or dictionaries                     |
-| **List**             | FIFO or LIFO queues                                   |
-| **Set**              | Unique, unordered collections                         |
-| **Sorted Set**       | Priority queues, leaderboards                         |
-| **Bloom Filter**     | Probabilistic membership (fast, with false positives) |
-| **Geospatial Index** | Store and query locations                             |
-| **Time Series**      | Store timestamped data efficiently                    |
-| **Streams**          | Append-only logs, event sourcing, work queues         |
-
+| Data Structure   | Use Case                                              |
+| -----------------| ----------------------------------------------------- |
+| String           | Simple key-value                                      |
+| Hash             | JSON-like objects or dictionaries                     |
+| List             | FIFO or LIFO queues                                   |
+| Set              | Unique, unordered collections                         |
+| Sorted Set       | Priority queues, leaderboards                         |
+| Bloom Filter     | Probabilistic membership (fast, with false positives) |
+| Geospatial Index | Store and query locations                             |
+| Time Series      | Store timestamped data efficiently                    |
+| Streams          | Append-only logs, event sourcing, work queues         |
 ---
-
-### **3. Commands and Operations**
-
-* Redis commands are **simple and readable**, grouped by data structure.
-* Examples:
-
+### 3. Commands and Operations
+- Redis commands are simple and readable, grouped by data structure.
+- Examples:
   ```text
   SET foo 1        # set key
   GET foo          # get key
@@ -171,160 +163,121 @@ Redis supports many structures that resemble programming language constructs:
   SMEMBERS myset   # list set elements
   ZADD leaderboard 500 user1  # add to sorted set
   ```
-* Redis operations are usually **atomic**, which makes it useful for locks and counters.
-
+- Redis operations are usually atomic, which makes it useful for locks and counters.
 ---
-
-### **4. Redis Infrastructure**
-
-* Can run as:
-
-  1. **Single node**
-  2. **HA replica**
-  3. **Cluster** (distributed across multiple nodes)
-* **Clusters use hash slots** to map keys to nodes.
-
-  * Clients cache hash slot mappings for performance.
-  * Nodes use **gossip protocol** to stay aware of each other.
-* **Important**: Redis expects data for a single request to reside on one node → key design is crucial for scaling.
-
+### 4. Redis Infrastructure
+- Can run as:
+  1. Single node
+  2. HA replica
+  3. Cluster (distributed across multiple nodes)
+- Clusters use hash slots to map keys to nodes.
+  - Clients cache hash slot mappings for performance.
+  - Nodes use gossip protocol to stay aware of each other.
+- Important: Redis expects data for a single request to reside on one node → key design is crucial for scaling.
 ---
-
-### **5. Performance**
-
-* Reads: **microseconds**
-* Writes: **100k+ per second**
-* Fast because all data is in-memory, no complex query planning.
-* Allows some patterns that would be inefficient in traditional databases (e.g., multiple small requests).
-
+### 5. Performance
+- Reads: microseconds
+- Writes: 100k+ per second
+- Fast because all data is in-memory, no complex query planning.
+- Allows some patterns that would be inefficient in traditional databases (e.g., multiple small requests).
 ---
-
-### **6. Common Use Cases**
-
-1. **Cache**
-
-   * Store frequently accessed data.
-   * Use TTL to expire items.
-   * Be careful of “hot key” issues (one key getting all traffic).
-2. **Distributed Lock**
-
-   * Use atomic operations like INCR or Redlock algorithm.
-   * Useful to prevent concurrent updates or actions.
-3. **Leaderboards**
-
-   * Sorted sets track rankings efficiently.
-4. **Rate Limiting**
-
-   * Count requests in a time window.
-   * Sliding window with timestamps and sorted sets for more accuracy.
-5. **Proximity Search**
-
-   * Geo commands (GEOADD, GEOSEARCH) to find nearby items.
-6. **Event Sourcing**
-
-   * Streams + consumer groups for queues and durable event processing.
-7. **Pub/Sub**
-
-   * Real-time messaging between producers and consumers.
-   * Non-durable: messages are missed if a subscriber is offline.
-
+### 6. Common Use Cases
+1. Cache
+   - Store frequently accessed data.
+   - Use TTL to expire items.
+   - Be careful of “hot key” issues (one key getting all traffic).
+2. Distributed Lock
+   - Use atomic operations like INCR or Redlock algorithm.
+   - Useful to prevent concurrent updates or actions.
+3. Leaderboards
+   - Sorted sets track rankings efficiently.
+4. Rate Limiting
+   - Count requests in a time window.
+   - Sliding window with timestamps and sorted sets for more accuracy.
+5. Proximity Search
+   - Geo commands (GEOADD, GEOSEARCH) to find nearby items.
+6. Event Sourcing
+   - Streams + consumer groups for queues and durable event processing.
+7. Pub/Sub
+   - Real-time messaging between producers and consumers.
+   - Non-durable: messages are missed if a subscriber is offline.
 ---
-
-### **7. Shortcomings / Gotchas**
-
-* **Durability**: in-memory, so data can be lost.
-* **Hot Key Problem**: one key receives disproportionate traffic → can overload a single node.
-
-  * Solutions:
-
+### 7. Shortcomings / Gotchas
+- Durability: in-memory, so data can be lost.
+- Hot Key Problem: one key receives disproportionate traffic → can overload a single node.
+  - Solutions:
     1. Client-side caching
     2. Duplicate keys and randomize requests
     3. Add read replicas and scale dynamically
-
 ---
-
-### **8. Why Redis is Useful in Interviews**
-
-* **Versatile**: covers caching, locks, leaderboards, rate limiting, pub/sub, streams.
-* **Simple**: easy to reason about behavior.
-* **Fast**: suitable for real-time, high-throughput systems.
-* Focus on learning **a few Redis features deeply**, instead of shallow knowledge of many tools.
-
+### 8. Why Redis is Useful in Interviews
+- Versatile: covers caching, locks, leaderboards, rate limiting, pub/sub, streams.
+- Simple: easy to reason about behavior.
+- Fast: suitable for real-time, high-throughput systems.
+- Focus on learning a few Redis features deeply, instead of shallow knowledge of many tools.
 ---
-
-✅ In short: Redis is **fast, versatile, and conceptually simple**, but you need to handle **durability, hot keys, and key design** carefully.
-
-
+✅ In short: Redis is fast, versatile, and conceptually simple, but you need to handle durability, hot keys, and key design carefully.
 SUMMARY:
 ---
-
-# **Redis Cheatsheet for Developers**
-
+# Redis Cheatsheet for Developers
 ---
+## 1. Core Concepts
+- Redis = In-memory key-value store (fast, single-threaded).
+- Keys → always strings.
+- Values → strings, hashes, lists, sets, sorted sets, streams, bitmaps, etc.
+- Atomic operations → guaranteed for single commands.
+- TTL & Expiration → keys can expire automatically (`EXPIRE key seconds`).
+- Persistence:
 
-## **1. Core Concepts**
-
-* **Redis** = In-memory key-value store (fast, single-threaded).
-* **Keys** → always strings.
-* **Values** → strings, hashes, lists, sets, sorted sets, streams, bitmaps, etc.
-* **Atomic operations** → guaranteed for single commands.
-* **TTL & Expiration** → keys can expire automatically (`EXPIRE key seconds`).
-* **Persistence**:
-
-  * **RDB** = snapshots
-  * **AOF** = append-only log
-  * Tradeoff: speed vs durability
-
+  - RDB = snapshots
+  - AOF = append-only log
+  - Tradeoff: speed vs durability
 ---
-
-## **2. Key Data Structures & Commands**
-
+## 2. Key Data Structures & Commands
 | Data Structure | Commands                         | Use Case / Notes                        |
 | -------------- | -------------------------------- | --------------------------------------- |
-| **String**     | SET, GET, INCR, DECR, APPEND     | Simple KV, counters, feature flags      |
-| **Hash**       | HSET, HGET, HGETALL, HINCRBY     | JSON-like objects, user profiles        |
-| **List**       | LPUSH, RPUSH, LPOP, RPOP, LRANGE | Queues, stacks, feed timeline           |
-| **Set**        | SADD, SMEMBERS, SISMEMBER, SCARD | Unique items, tags, followers           |
-| **Sorted Set** | ZADD, ZRANGE, ZREVRANGE, ZREM    | Leaderboards, rankings, priority queues |
-| **Stream**     | XADD, XREADGROUP, XCLAIM         | Event sourcing, work queues             |
-| **Pub/Sub**    | PUBLISH, SUBSCRIBE               | Real-time notifications, chat           |
+| String     | SET, GET, INCR, DECR, APPEND     | Simple KV, counters, feature flags      |
+| Hash       | HSET, HGET, HGETALL, HINCRBY     | JSON-like objects, user profiles        |
+| List       | LPUSH, RPUSH, LPOP, RPOP, LRANGE | Queues, stacks, feed timeline           |
+| Set        | SADD, SMEMBERS, SISMEMBER, SCARD | Unique items, tags, followers           |
+| Sorted Set | ZADD, ZRANGE, ZREVRANGE, ZREM    | Leaderboards, rankings, priority queues |
+| Stream     | XADD, XREADGROUP, XCLAIM         | Event sourcing, work queues             |
+| Pub/Sub    | PUBLISH, SUBSCRIBE               | Real-time notifications, chat           |
+
+---
+## 3. Redis Cluster Basics
+- 16384 hash slots → keys distributed across nodes.
+- Client caches slot → node mapping.
+- MOVED / ASK → key moved to another node during rebalancing.
+- Hot key problem → one key gets too much traffic → use replicas, caching, or duplication.
 
 ---
 
-## **3. Redis Cluster Basics**
-
-* **16384 hash slots** → keys distributed across nodes.
-* **Client caches** slot → node mapping.
-* **MOVED / ASK** → key moved to another node during rebalancing.
-* **Hot key problem** → one key gets too much traffic → use replicas, caching, or duplication.
-
----
-
-## **4. Common Use Cases / Patterns**
+## 4. Common Use Cases / Patterns
 
 | Pattern                     | How Redis Helps                              |
 | --------------------------- | -------------------------------------------- |
-| **Cache**                   | SET, GET, TTL, LRU eviction                  |
-| **Distributed Lock**        | SETNX, INCR + TTL, Redlock                   |
-| **Rate Limiting**           | INCR, EXPIRE, Sorted Sets for sliding window |
-| **Leaderboards**            | Sorted Sets: ZADD + ZRANGE                   |
-| **Proximity Search**        | GEOADD, GEOSEARCH                            |
-| **Event Sourcing / Queue**  | Streams: XADD + Consumer Groups              |
-| **Real-time notifications** | Pub/Sub                                      |
+| Cache                   | SET, GET, TTL, LRU eviction                  |
+| Distributed Lock        | SETNX, INCR + TTL, Redlock                   |
+| Rate Limiting           | INCR, EXPIRE, Sorted Sets for sliding window |
+| Leaderboards            | Sorted Sets: ZADD + ZRANGE                   |
+| Proximity Search        | GEOADD, GEOSEARCH                            |
+| Event Sourcing / Queue  | Streams: XADD + Consumer Groups              |
+| Real-time notifications | Pub/Sub                                      |
 
 ---
 
-## **5. Performance & Anti-Patterns**
+## 5. Performance & Anti-Patterns
 
-* Avoid **hot keys** → split or replicate.
-* Avoid **large objects in a single key** → split logically.
-* Multi-key operations → must reside on **same node** in cluster.
-* **Pipelining** → batch commands to reduce round-trip latency.
-* **Client-side caching** → reduce pressure on Redis.
+- Avoid hot keys → split or replicate.
+- Avoid large objects in a single key → split logically.
+- Multi-key operations → must reside on same node in cluster.
+- Pipelining → batch commands to reduce round-trip latency.
+- Client-side caching → reduce pressure on Redis.
 
 ---
 
-## **6. Developer Essentials (Node.js)**
+## 6. Developer Essentials (Node.js)
 
 ```javascript
 // Install: npm install ioredis
@@ -344,7 +297,7 @@ await redis.zadd("leaderboard", 500, "user123");
 const top = await redis.zrevrange("leaderboard", 0, 4, "WITHSCORES");
 
 // Stream
-await redis.xadd("mystream", "*", "event", "login");
+await redis.xadd("mystream", "-", "event", "login");
 const events = await redis.xreadgroup("group1", "consumer1", { key: "mystream", count: 10 });
 
 // Pub/Sub
@@ -354,12 +307,12 @@ redis.on("message", (channel, message) => console.log(channel, message));
 
 ---
 
-## **7. Quick Tips**
+## 7. Quick Tips
 
-* Use **prefixes for key namespaces**: `"user:123:profile"`.
-* Use **TTL** for caches and temporary data.
-* For **rarely changing hot keys**, use **client-side cache or replication**.
-* Monitor memory usage: `INFO memory`.
-* Use **Lua scripts** for atomic multi-step operations.
+- Use prefixes for key namespaces: `"user:123:profile"`.
+- Use TTL for caches and temporary data.
+- For rarely changing hot keys, use client-side cache or replication.
+- Monitor memory usage: `INFO memory`.
+- Use Lua scripts for atomic multi-step operations.
 
 ---
