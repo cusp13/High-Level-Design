@@ -1,0 +1,46 @@
+### 🧩 API Gateway — Overview
+- Definition: A single entry point for all client requests to backend microservices.
+- Analogy: Like a hotel front desk — clients don’t interact with individual rooms (services), they go through one gateway.
+---
+### 🎯 Core Purpose
+- Primary Role: Request Routing – directs incoming requests to the right backend service.
+- Secondary Roles: Handles cross-cutting concerns (middleware) like auth, rate limiting, caching, etc.
+---
+### ⚙️ Request Flow
+1. Request Validation: Checks if request is valid (URL, headers, payload).
+2. Middleware:
+   - Auth (JWT, API keys)
+   - Rate limiting & throttling
+   - SSL termination
+   - Logging & monitoring
+   - CORS, IP whitelisting/blacklisting
+3. Routing: Maps paths to services (e.g. `/users/- → user-service`).
+4. Backend Communication: Routes request (HTTP/gRPC, etc.) to the right service.
+5. Response Transformation: Converts backend responses into client-friendly formats (e.g. gRPC → JSON).
+6. Caching: Optional — speeds up repeated non-user-specific requests using TTL or Redis.
+---
+### 🚀 Scaling
+- Horizontal Scaling: Add more stateless gateway instances behind a load balancer.
+- Global Distribution:
+  - Deploy gateways regionally
+  - Use GeoDNS for nearest routing
+  - Sync configurations across regions.
+---
+### 🔧 Popular Gateways
+Managed (Cloud):
+- AWS API Gateway
+- Azure API Management
+- Google Cloud Endpoints
+Open Source:
+- Kong (NGINX-based, plugins)
+- Tyk (GraphQL support, analytics)
+- Express Gateway (Node.js-based)
+---
+### 🧠 When to Use
+✅ Use in microservices architecture — simplifies client interaction & centralizes control.
+❌ Avoid in monolithic setups — adds unnecessary complexity.
+---
+### 🗒️ Interview Tip
+When designing systems:
+> “I’ll use an API Gateway to handle routing and basic middleware like authentication and rate limiting.”
+Then move on — don’t overfocus on it.
