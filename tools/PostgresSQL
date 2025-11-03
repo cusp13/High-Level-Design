@@ -1,0 +1,47 @@
+
+https://medium.com/@jramcloud1/the-internal-structure-of-postgresql-a-deep-dive-into-how-postgresql-organizes-data-7a0952ec0569
+
+✅ Autovacuum does not run constantly.
+Each table has a few thresholds that trigger a vacuum cycle:
+
+📊 Conditions Checked
+PostgreSQL checks roughly:
+vacuum_threshold = autovacuum_vacuum_threshold + autovacuum_vacuum_scale_factor * number_of_live_rows
+autovacuum_vacuum_threshold → default 50
+autovacuum_vacuum_scale_factor → default 0.2 (20%)
+number_of_live_rows → estimated number of tuples in the table
+
+So, for example:
+If a table has 100,000 rows →
+Autovacuum runs when ~20,050 rows are dead.
+(50 + 0.2 × 100,000)
+That’s how PostgreSQL decides when to vacuum.
+
+
+Now:
+When you UPDATE a row → PostgreSQL sets the old row’s xmax to the new transaction ID.
+But it doesn’t immediately mark it dead.
+The tuple is only considered dead once no active transaction could possibly see it anymore.
+That means:
+If some long-running transaction started before the update → that transaction can still “see” the old row (due to MVCC rules).
+So PostgreSQL keeps the old version alive until that transaction finishes.
+So:
+✅ “Not marked as dead” = still visible (to some transaction, snapshot, or in-progress query).
+🧹 Only when all possible snapshots move past it → autovacuum can clean it.
+
+row is not dead if some transaction can still see it (MVCC visibility rule).
+
+FSM lookup is lightweight; PostgreSQL only appends when no reusable space is found — no latency concern in practice.
+
+
+⚙️ Two Types (Advanced Insight)
+
+Regular View (Virtual View) → Runs query on demand; no data stored.
+
+Materialized View → Stores query result physically; needs refresh manually.
+
+👉 Analogy:
+
+View = freshly cooked dish every time 🍳
+
+Materialized View = pre-cooked, stored in the fridge 🧊 (faster but can become stale)
